@@ -1,7 +1,10 @@
+// src/controllers/docConvertController.js
 import fs from 'fs/promises';
-import fsSync from 'fs'; // For existsSync & mkdirSync
+import fsSync from 'fs';
 import path from 'path';
 import convertDocument from '../services/convertDocument.js';
+
+const allowedFormats = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'odt', 'ods', 'odp', 'txt', 'rtf'];
 
 export const convertDocHandler = async (req, res) => {
   if (!req.file) {
@@ -12,10 +15,11 @@ export const convertDocHandler = async (req, res) => {
   const inputPath = req.file.path;
   const baseName = path.parse(req.file.originalname).name;
 
-  // ✅ Use safe temp dir on Render
-  const outputDir = path.join('/tmp', 'uploads_processed');
+  if (!allowedFormats.includes(path.extname(req.file.originalname).toLowerCase().replace('.', ''))) {
+    return res.status(400).json({ error: 'Unsupported input file format.' });
+  }
 
-  // ✅ Ensure directory exists
+  const outputDir = path.join('/tmp', 'uploads_processed');
   if (!fsSync.existsSync(outputDir)) {
     fsSync.mkdirSync(outputDir, { recursive: true });
   }
@@ -23,9 +27,7 @@ export const convertDocHandler = async (req, res) => {
   let outputPath = null;
 
   try {
-    // ✅ Convert the document
     outputPath = await convertDocument(inputPath, format, outputDir);
-
     const fileBuffer = await fs.readFile(outputPath);
 
     res.set({
@@ -35,21 +37,20 @@ export const convertDocHandler = async (req, res) => {
 
     res.send(fileBuffer);
   } catch (error) {
-    console.error('❌ Doc conversion error:', error);
-    return res.status(500).json({ error: 'Document conversion failed' });
+    console.error('Conversion failed:', error);
+    res.status(500).json({ error: 'Document conversion failed' });
   } finally {
-    // ✅ Cleanup: delete input & output files
     try {
       await fs.unlink(inputPath);
     } catch (e) {
-      console.warn('⚠️ Failed to delete input file:', e);
+      console.warn('Failed to delete input file:', e);
     }
 
     if (outputPath) {
       try {
         await fs.unlink(outputPath);
       } catch (e) {
-        console.warn('⚠️ Failed to delete converted file:', e);
+        console.warn('Failed to delete converted file:', e);
       }
     }
   }

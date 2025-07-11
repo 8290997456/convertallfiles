@@ -2,20 +2,26 @@ import fs from 'fs/promises';
 import { fromPath } from 'pdf2pic';
 import fsExtra from 'fs-extra';
 import Tesseract from 'tesseract.js';
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js'; // legacy build is for Node.js
+import pkg from 'pdfjs-dist/legacy/build/pdf.js';
+const { getDocument } = pkg;
 
 /**
  * Extract text using PDF.js first, fallback to OCR if empty
  */
 export async function extractTextFromPdf(filePath) {
-  try {
-    const text = await extractTextWithPdfjs(filePath);
-    if (!text || text.trim() === '') throw new Error('No text found');
-    return text;
-  } catch (err) {
-    console.warn('⚠️ Falling back to OCR...');
-    return await extractTextWithOcr(filePath);
+  const data = await fs.readFile(filePath);
+  const loadingTask = getDocument({ data });
+  const pdfDocument = await loadingTask.promise;
+
+  let fullText = '';
+  for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+    const page = await pdfDocument.getPage(pageNum);
+    const content = await page.getTextContent();
+    const strings = content.items.map(item => item.str).join(' ');
+    fullText += strings + '\n';
   }
+
+  return fullText.trim();
 }
 
 /**

@@ -1,28 +1,23 @@
-// src/services/removePasswordService.js
+// src / services/removePasswordService.js 
 
-import { PDFDocument } from 'pdf-lib';
 import fs from 'fs/promises';
+import path from 'path';
 import { exec } from 'child_process';
 import util from 'util';
 
 const execPromise = util.promisify(exec);
 
 /**
- * 🔓 Master unlock service for PDF, DOCX/XLSX (future), and ZIP
- * @param {string} filePath
- * @param {string} password
- * @param {string} fileType
+ * 🔓 Master unlock service for PDF, DOCX/XLSX, and ZIP
+ * @param {string} filePath - Full path of uploaded file
+ * @param {string} password - Password to unlock
+ * @param {string} fileType - File extension (pdf, docx, xlsx, zip)
  * @returns {Promise<Buffer>} - Unlocked file bytes
  */
 export async function removePassword(filePath, password = '', fileType) {
   switch (fileType.toLowerCase()) {
     case 'pdf':
       return await removePdfPassword(filePath, password);
-
-    case 'docx':
-    case 'xlsx':
-      return await removeOfficePassword(filePath, password, fileType);
-
     case 'zip':
       return await removeZipPassword(filePath, password);
 
@@ -32,28 +27,20 @@ export async function removePassword(filePath, password = '', fileType) {
 }
 
 /**
- * 🗂 Unlock PDF using qpdf CLI
+ * 🗂 Unlock PDF using LibreOffice
  */
 async function removePdfPassword(filePath, password = '') {
   const outputPath = `${filePath}-unlocked.pdf`;
-  const command = `qpdf --password=${password} --decrypt "${filePath}" "${outputPath}"`;
+  const command = `gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile="${outputPath}" -sPDFPassword=${password} "${filePath}"`;
 
   try {
     await execPromise(command);
     const unlockedBytes = await fs.readFile(outputPath);
-    await fs.unlink(outputPath); // Cleanup unlocked file
+    await fs.unlink(outputPath);
     return unlockedBytes;
   } catch (error) {
-    throw new Error(`PDF unlock failed: ${error.message}`);
+    throw new Error(`PDF unlock via Ghostscript failed: ${error.message}`);
   }
-}
-
-/**
- * 📄 Placeholder for DOCX/XLSX password removal
- */
-async function removeOfficePassword(filePath, password, fileType) {
-  // TODO: Use LibreOffice CLI for actual implementation
-  throw new Error(`DOCX/XLSX password removal not implemented yet for ${fileType}`);
 }
 
 /**

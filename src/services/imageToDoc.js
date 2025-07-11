@@ -9,6 +9,7 @@ export async function extractTextFromImage(imagePath) {
   return result.data.text;
 }
 
+
 export async function textToWordFile(text, originalName) {
   const doc = new Document({
     sections: [{ children: [new Paragraph(text)] }],
@@ -19,6 +20,7 @@ export async function textToWordFile(text, originalName) {
   await fs.writeFile(filename, buffer);
   return filename;
 }
+
 
 export async function textToExcelFile(text, originalName) {
   const workbook = new ExcelJS.Workbook();

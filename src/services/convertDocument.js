@@ -1,4 +1,3 @@
-// src/services/convertDocument.js
 import path from 'path';
 import { exec } from 'child_process';
 import fs from 'fs/promises';
@@ -9,23 +8,28 @@ const execPromise = util.promisify(exec);
 export default async function convertDocument(inputPath, format, outputDir) {
   await fs.mkdir(outputDir, { recursive: true });
 
-  const command = `libreoffice --headless --convert-to ${format} --outdir ${outputDir} "${inputPath}"`;
-  await execPromise(command);
+  // ✅ Silent + clean command
+  const command = `libreoffice --headless --nologo --nodefault --nofirststartwizard --nolockcheck --convert-to ${format} --outdir "${outputDir}" "${inputPath}" 2>/dev/null`;
 
-  // Find the most recent file with the correct extension
+  try {
+    await execPromise(command);
+  } catch (error) {
+    console.error('❌ LibreOffice conversion error:', error);
+    throw new Error('Failed to convert file using LibreOffice');
+  }
+
   const files = await fs.readdir(outputDir);
   const matchingFiles = files.filter(f => f.endsWith(`.${format}`));
+
   if (!matchingFiles.length) throw new Error('Converted file not found');
 
-  // Return the full path of the latest converted file
-  const latestFile = matchingFiles
-    .map(file => ({
-      file,
-      time: fs.stat(path.join(outputDir, file)).then(stat => stat.mtimeMs),
-    }));
+  const fileWithTimes = await Promise.all(
+    matchingFiles.map(async (file) => {
+      const stat = await fs.stat(path.join(outputDir, file));
+      return { file, time: stat.mtimeMs };
+    })
+  );
 
-  const resolved = await Promise.all(latestFile);
-  const mostRecent = resolved.sort((a, b) => b.time - a.time)[0];
-
+  const mostRecent = fileWithTimes.sort((a, b) => b.time - a.time)[0];
   return path.join(outputDir, mostRecent.file);
 }

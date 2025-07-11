@@ -1,3 +1,4 @@
+// src/controller/ocrController.js
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
@@ -102,21 +103,23 @@ export const pdfToExcelHandler = async (req, res) => {
 export const pdfToWordHandler = async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-  const text = await extractTextFromPdf(req.file.path);
-  const filePath = await textToWordFile(
-    text,
-    req.file.originalname,
-    OUTPUT_DIR
-  );
+  try {
+    const text = await extractTextFromPdf(req.file.path);
+    const filePath = await textToWordFile(text, req.file.originalname);
 
-  const buffer = await fs.readFile(filePath);
-  res.set({
-    'Content-Type':
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'Content-Disposition': `attachment; filename="${path.basename(filePath)}"`,
-  });
-  res.send(buffer);
+    const buffer = await fs.readFile(filePath);
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': `attachment; filename="${path.basename(filePath)}"`,
+    });
+    res.send(buffer);
 
-  await fs.unlink(req.file.path);
-  await fs.unlink(filePath);
+    // Clean up temp files
+    await fs.unlink(req.file.path);
+    await fs.unlink(filePath);
+  } catch (err) {
+    console.error('PDF to Word conversion error:', err);
+    res.status(500).json({ error: 'Failed to convert PDF to Word' });
+  }
 };
+
