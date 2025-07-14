@@ -14,7 +14,7 @@ export default async function convertDocument(inputPath, format, outputDir) {
   try {
     await execPromise(command);
   } catch (error) {
-    console.error('❌ LibreOffice conversion error:', error);
+    console.error('LibreOffice conversion error:', error);
     throw new Error('Failed to convert file using LibreOffice');
   }
 

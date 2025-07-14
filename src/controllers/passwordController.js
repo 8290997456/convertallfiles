@@ -50,7 +50,10 @@ export const unlockPasswordHandler = async (req, res) => {
 
     res.send(Buffer.from(unlockedBytes));
   } catch (error) {
-    console.error('❌ Error unlocking document:', error.message);
+    if (error.message.includes('Incorrect password')) {
+      return res.status(401).json({ error: error.message });
+    }
+    console.error('Error unlocking document:', error.message);
     res.status(500).json({
       error: 'Failed to remove password. Wrong password or unsupported file.',
     });

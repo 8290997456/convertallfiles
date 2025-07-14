@@ -7,6 +7,7 @@ import docConvertRoutes from './routes/docConvertRoute.js';
 import passwordRoutes from './routes/passwordRoutes.js';
 import cropImageRoute from './routes/cropImageRoute.js';
 import ocrRoutes from './routes/ocrRoutes.js';
+import mozRoute from './routes/mozRoute.js';
 
 const app = express();
 app.use(cors());
@@ -22,6 +23,7 @@ app.use('/convert', convertRoutes);
 app.use('/compress', imageRoutes);
 app.use('/crop-image',cropImageRoute);
 app.use('/ocr', ocrRoutes);
+app.use('/api', mozRoute);
 
 
 export default app;

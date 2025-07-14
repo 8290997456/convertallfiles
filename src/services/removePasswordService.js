@@ -39,6 +39,13 @@ async function removePdfPassword(filePath, password = '') {
     await fs.unlink(outputPath);
     return unlockedBytes;
   } catch (error) {
+    const isWrongPassword =
+      error.message.includes('exit code 1') ||
+      error.message.includes('Unrecoverable error');
+
+    if (isWrongPassword) {
+      throw new Error("Incorrect PDF password. Please check and try again.");
+    }
     throw new Error(`PDF unlock via Ghostscript failed: ${error.message}`);
   }
 }
