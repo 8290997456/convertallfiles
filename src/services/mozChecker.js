@@ -1,7 +1,7 @@
 // services/mozChecker.js
-import axios from 'axios';
-import crypto from 'crypto';
-import dotenv from 'dotenv';
+// import axios from 'axios';
+// import crypto from 'crypto';
+// import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -24,7 +24,9 @@ export const getMozData = async (domain) => {
     const response = await axios.post(endpoint, body, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${Buffer.from(`${ACCESS_ID}:${SECRET_KEY}`).toString('base64')}`,
+        Authorization: `Basic ${Buffer.from(
+          `${ACCESS_ID}:${SECRET_KEY}`
+        ).toString('base64')}`,
       },
     });
 
